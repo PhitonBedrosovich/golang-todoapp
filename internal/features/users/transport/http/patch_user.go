@@ -10,7 +10,6 @@ import (
 	core_http_request "github.com/PhitonBedrosovich/golang-todoapp/internal/core/transport/http/request"
 	core_http_response "github.com/PhitonBedrosovich/golang-todoapp/internal/core/transport/http/response"
 	core_http_types "github.com/PhitonBedrosovich/golang-todoapp/internal/core/transport/http/types"
-	core_http_utils "github.com/PhitonBedrosovich/golang-todoapp/internal/core/transport/http/utils"
 )
 
 // входящая дто-шка, какоторую мы будем принимать в http-обработчике PatchUser
@@ -57,7 +56,7 @@ func (h *UsersHTTPHandler) PatchUser(rw http.ResponseWriter, r *http.Request) {
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
 
 	// какого пользователя нужно менять
-	userID, err := core_http_utils.GetIntPathValue(r, "id")
+	userID, err := core_http_request.GetIntPathValue(r, "id")
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,
@@ -94,8 +93,8 @@ func (h *UsersHTTPHandler) PatchUser(rw http.ResponseWriter, r *http.Request) {
 }
 
 func userPatchFromRequest(request PatchUserRequest) domain.UserPatch {
-	return domain.UserPatch{
-		FullName:    request.FullName.ToDomain(),
-		PhoneNumber: request.PhoneNumber.ToDomain(),
-	}
+	return domain.NewUserPatch(
+		request.FullName.ToDomain(),
+		request.PhoneNumber.ToDomain(),
+	)
 }
