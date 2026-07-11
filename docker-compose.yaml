@@ -21,4 +21,4 @@ services:
     container_name: todoapp-postgres-port-forwarder
     command: tcp-listen:5432,fork,reuseaddr tcp-connect:todoapp-postgres:5432 # поддержка двунаправленного сетевого трафика (проброс сетевого трафика изнутри докер контейнера с postgres на порт сервиса port-forwarder)
     ports:
-      - "127.0.0.1:5433:5432" # проброс порта сервиса port-forwarder на порт хоста системы с доступом только с localhost
+      - "127.0.0.1:5432:5432" # проброс порта сервиса port-forwarder на порт хоста системы с доступом только с localhost
