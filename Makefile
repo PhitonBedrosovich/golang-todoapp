@@ -1,5 +1,7 @@
 include .env
 export
+export LOGGER_FOLDER = $(PROJECT_ROOT)/out/logs
+export POSTGRES_HOST=127.0.0.1
 
 # Кроссплатформенное определение текущей директории
 ifeq ($(OS),Windows_NT)
@@ -24,7 +26,7 @@ ifeq ($(OS),Windows_NT)
 		$$cancel = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('0J7Rh9C40YHRgtC60LAg0L7QutGA0YPQttC10L3QuNGPINC+0YLQvNC10L3QtdC90LA=')); \
 		$$ans = Read-Host \"$$msg\"; \
 		if ($$ans.Trim().ToLower() -eq 'y') { \
-			docker compose down todoapp-postgres; \
+			docker compose down todoapp-postgres port-forwarder; \
 			Remove-Item -Recurse -Force 'out/pgdata' -ErrorAction SilentlyContinue; \
 			Write-Host $$success -ForegroundColor Green; \
 		} else { \
@@ -33,7 +35,7 @@ ifeq ($(OS),Windows_NT)
 else
 	@read -p "Очистить все volume файлы окружения? Опасность утери данных. [y/N]: " ans; \
 	if [ "$$ans" = "y" ]; then \
-		docker compose down todoapp-postgres && \
+		docker compose down todoapp-postgres port-forwarder && \
 		rm -rf out/pgdata && \
 		echo "Файлы окружения очищены"; \
 	else \
@@ -113,3 +115,8 @@ migrate-action:
 		- database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@todoapp-postgres:5432/${POSTGRES_DB}?sslmode=disable \
 		"$(action)"
 endif
+
+# для автоматической актуализации файлов go.mod и go.sum
+todoapp-run:
+	@go mod tidy
+	@go run cmd/todoapp/main.go
