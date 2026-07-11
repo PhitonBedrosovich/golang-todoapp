@@ -33,24 +33,24 @@ func NewHTTPServer(
 	}
 }
 
-func (h *HTTPServer) RequesterAPIRouters(routers ...*APIVersionRouter) {
+func (s *HTTPServer) RequesterAPIRouters(routers ...*APIVersionRouter) {
 	for _, router := range routers {
 		prefix := "/api/" + string(router.apiVersion)
 
-		h.mux.Handle(
+		s.mux.Handle(
 			prefix+"/",
-			http.StripPrefix(prefix, router),
+			http.StripPrefix(prefix, router.WithMiddleware()),
 		)
 	}
 }
 
 // метод будет запускать HTTPServer, обработчик http запросов и возвращать ошибки
-func (h *HTTPServer) Run(ctx context.Context) error {
+func (s *HTTPServer) Run(ctx context.Context) error {
 	// навесим на мультиплексор middlewares
-	mux := core_http_middleware.ChainMiddleware(h.mux, h.middleware...)
+	mux := core_http_middleware.ChainMiddleware(s.mux, s.middleware...)
 
 	server := &http.Server{
-		Addr:    h.config.Addr,
+		Addr:    s.config.Addr,
 		Handler: mux,
 	}
 
@@ -61,7 +61,7 @@ func (h *HTTPServer) Run(ctx context.Context) error {
 	go func() {
 		defer close(ch)
 
-		h.log.Warn("start HTTP server", zap.String("addr", h.config.Addr))
+		s.log.Warn("start HTTP server", zap.String("addr", s.config.Addr))
 
 		// обрабатываем http-запросы, которые летят на сервер
 		err := server.ListenAndServe()
@@ -79,12 +79,12 @@ func (h *HTTPServer) Run(ctx context.Context) error {
 			return fmt.Errorf("listen and server HTTP: %w", err)
 		}
 	case <-ctx.Done():
-		h.log.Warn("shutdown HTTP server...")
+		s.log.Warn("shutdown HTTP server...")
 
 		shutdownCtx, cancel := context.WithTimeout(
 			context.Background(),
 			// ждем пока все http-обработчики доработают до конца
-			h.config.ShutdownTimeout,
+			s.config.ShutdownTimeout,
 		)
 		defer cancel()
 
@@ -96,7 +96,7 @@ func (h *HTTPServer) Run(ctx context.Context) error {
 			return fmt.Errorf("shutdown HTTP server: %w", err)
 		}
 
-		h.log.Warn("HTTP server stopped")
+		s.log.Warn("HTTP server stopped")
 	}
 
 	return nil

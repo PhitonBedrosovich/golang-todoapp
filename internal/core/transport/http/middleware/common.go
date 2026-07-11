@@ -1,7 +1,6 @@
 package core_http_middleware
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -44,14 +43,40 @@ func Logger(log *core_logger.Logger) Middleware {
 				zap.String("url", r.URL.String()),
 			)
 
-			ctx := context.WithValue(r.Context(), "log", l)
+			ctx := core_logger.ToContext(r.Context(), l)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// 3.
+// 3. middleware логирует все входящие входящие запросы и все выходящие ответы
+func Trace() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			log := core_logger.FromContext(ctx)
+			rw := core_http_response.NewResponseWriter(w)
+
+			before := time.Now()
+			log.Debug(
+				">>> incoming HTTP request",
+				zap.String("http_method", r.Method),
+				zap.Time("time", before.UTC()),
+			)
+
+			next.ServeHTTP(rw, r) // выполнение HTTP handlera (запроса)
+
+			log.Debug(
+				"<<< done HTTP request",
+				zap.Int("status_code", rw.GetStatusCode()),
+				zap.Duration("latency", time.Now().Sub(before)), // получаем текущее время и вычитаем время до выполнения запроса
+			)
+		})
+	}
+}
+
+// 4.
 func Panic() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -71,32 +96,6 @@ func Panic() Middleware {
 
 			// функция Panic вызывает следующий (next) handler, который она оборачивает
 			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// 5. middleware логирует все входящие входящие запросы и все выходящие ответы
-func Trace() Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			log := core_logger.FromContext(ctx)
-			rw := core_http_response.NewResponseWriter(w)
-
-			before := time.Now()
-			log.Debug(
-				">>> incoming HTTP request",
-				zap.String("http_method", r.Method),
-				zap.Time("time", before.UTC()),
-			)
-
-			next.ServeHTTP(rw, r) // выполнение HTTP handlera (запроса)
-
-			log.Debug(
-				"<<< done HTTP request",
-				zap.Int("status_code", rw.GetStatusCodeOrPanic()),
-				zap.Duration("latency", time.Now().Sub(before)), // получаем текущее время и вычитаем время до выполнения запроса
-			)
 		})
 	}
 }
