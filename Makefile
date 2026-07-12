@@ -116,6 +116,31 @@ migrate-action:
 		"$(action)"
 endif
 
+logs-cleanup:
+ifeq ($(OS),Windows_NT)
+	@powershell -Command " \
+	[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; \
+	[Console]::InputEncoding = [System.Text.Encoding]::UTF8; \
+	$$msg = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('0J7Rh9C40YHRgtC40YLRjCDQstGB0LUgbG9nINGE0LDQudC70Ys/INCe0L/QsNGB0L3QvtGB0YLRjCDRg9GC0LXRgNC4INC70L7Qs9C+0LIuIFt5L05d')); \
+	$$success = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('0KTQsNC50LvRiyDQu9C+0LPQvtCyINC+0YfQuNGJ0LXQvdGL')); \
+	$$cancel = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('0J7Rh9C40YHRgtC60LAg0LvQvtCz0L7QsiDQvtGC0LzQtdC90LXQvdCw')); \
+	$$ans = Read-Host \"$$msg\"; \
+	if ($$ans.Trim().ToLower() -eq 'y') { \
+		Remove-Item -Recurse -Force 'out/logs' -ErrorAction SilentlyContinue; \
+		Write-Host $$success -ForegroundColor Green; \
+	} else { \
+		Write-Host $$cancel -ForegroundColor Gray; \
+	}"
+else
+	@read -p "Очистить все log файлы? Опасность утери логов. [y/N]: " ans; \
+	if [ "$$ans" = "y" ]; then \
+		rm -rf out/logs && \
+		echo "Файлы логов очищены"; \
+	else \
+		echo "Очистка логов отменена"; \
+	fi
+endif
+
 # для автоматической актуализации файлов go.mod и go.sum
 todoapp-run:
 	@go mod tidy
