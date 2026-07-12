@@ -2,6 +2,7 @@ package core_pgx_pool
 
 import (
 	"errors"
+	"fmt"
 
 	core_postgres_pool "github.com/PhitonBedrosovich/golang-todoapp/internal/core/repository/postgres/conn"
 	"github.com/jackc/pgx/v5"
@@ -18,13 +19,10 @@ type pgxRow struct {
 
 // переопределение библиотеки pgx для pgxRow
 func (r pgxRow) Scan(dest ...any) error {
+
 	err := r.Row.Scan(dest...)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return core_postgres_pool.ErrNoRows
-		}
-
-		return err
+		return mapErrors(err)
 	}
 
 	return nil
@@ -32,4 +30,32 @@ func (r pgxRow) Scan(dest ...any) error {
 
 type pgxCommandTag struct {
 	pgconn.CommandTag
+}
+
+func mapErrors(err error) error {
+	const (
+		pgxViolatesForeignKeyErrorCode = "23503"
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return core_postgres_pool.ErrNoRows
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		// код ошибок, ошибки обозначают проблему: violates foreign key
+		if pgErr.Code == pgxViolatesForeignKeyErrorCode {
+			return fmt.Errorf(
+				"%v: %w",
+				err,
+				core_postgres_pool.ErrViolatesForeignKey,
+			)
+		}
+	}
+
+	return fmt.Errorf(
+		"%v: %w",
+		err,
+		core_postgres_pool.ErrUnknown,
+	)
 }

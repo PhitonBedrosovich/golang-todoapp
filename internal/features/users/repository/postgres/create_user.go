@@ -36,9 +36,9 @@ func (r *UsersRepository) CreateUser(
 
 	userDomain := domain.NewUser(
 		userModel.ID,
-		user.Version,
-		user.FullName,
-		user.PhoneNumber,
+		userModel.Version,
+		userModel.FullName,
+		userModel.PhoneNumber,
 	)
 
 	return userDomain, nil
