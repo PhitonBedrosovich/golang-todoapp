@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // запрашиваем внутри бинарника
 
 	core_config "github.com/PhitonBedrosovich/golang-todoapp/internal/core/config"
 	core_logger "github.com/PhitonBedrosovich/golang-todoapp/internal/core/logger"

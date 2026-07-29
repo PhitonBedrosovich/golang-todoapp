@@ -145,3 +145,13 @@ endif
 todoapp-run:
 	@go mod tidy
 	@go run cmd/todoapp/main.go
+
+# пересборка docker-compose сервиса
+todoapp-deploy:
+	@docker compose up -d --build todoapp
+
+todoapp-undeploy:
+	@docker compose down todoapp
+
+ps:
+	@docker compose ps
