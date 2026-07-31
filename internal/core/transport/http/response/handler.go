@@ -42,6 +42,15 @@ func (h *HTTPResponseHandler) NotContentResponse() {
 	h.rw.WriteHeader(http.StatusNoContent)
 }
 
+func (h *HTTPResponseHandler) HTMLResponse(html []byte) {
+	h.rw.WriteHeader(http.StatusOK) // ответный статус-код
+
+	h.rw.Header().Set("Content-Type", "text/html; charset=utf-8") // чтобы браузер понимал, что в http-ответе именно html в заданной кодировке
+	if _, err := h.rw.Write(html); err != nil {
+		h.log.Error("write HTML HTTP response", zap.Error(err))
+	}
+}
+
 func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 	var (
 		statusCode int

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --primary: #256eb2;
+            --primary-hover: #1d4ed8;
+            --bg: #f5f5f5;
+            --card: #fff;
+            --text: #222;
+            --muted: #666;
+            --border: #f0f0f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --badge-done-bg: #dcfce7;
+            --badge-done-text: #16a34a;
+            --badge-open-bg: #dbeafe;
+            --badge-open-text: #256eb2;
+            --danger-hover-bg: #fef2f2;
+        }
+
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e4e4e4;
+            --muted: #999;
+            --border: #333;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --badge-done-bg: #14532d;
+            --badge-done-text: #86efac;
+            --badge-open-bg: #1e3a5f;
+            --badge-open-text: #93c5fd;
+            --danger-hover-bg: #3f1515;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .container { max-width: 960px; margin: 0 auto; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        header h1 { margin: 0 0 4px; font-size: 28px; }
+        header p { margin: 0; color: var(--muted); font-size: 14px; }
+
+        #theme-toggle {
+            flex-shrink: 0;
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card {
+            background: var(--card);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px grba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+        }
+
+        button:hover { background: var(--primary-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        button.secondary {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        button.secondary:hover { background: var(--bg); }
+
+        button.danger {
+            background: var(--card);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        button.danger:hover { background: var(--danger-hover-bg); }
+
+        button.small { padding: 6px 12px; font-size: 12px; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+
+        textarea { min-height: 72px; resize: vertical; }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .filters > div { flex: 1; min-width: 140px; }
+        .filters label { margin-bottom: 4px; }
+        .filters input, .filters select { margin-bottom: 0; }
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            background: var(--card);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px grba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        li {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        li:last-child { border-bottom: none; }
+
+        li .info { flex: 1; }
+        li .title { font-weight: 600; margin-bottom: 4px; }
+        li .meta { font-size: 12px; color: var(--muted); }
+        li .actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+
+        li.completed .title {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+
+        .task-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .task-card {
+            flex: 1 1 320px;
+            max-width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 1px 4px grba(0, 0, 0, 0.1);
+        }
+
+        .task-card-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .task-card-header input[type="checkbox"] {
+            width: auto;
+            margin: 4px 0 0;
+            flex-shrink: 0;
+        }
+
+        .task-card .title {
+            flex: 1;
+            font-weight: 600;
+            font-size: 15px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .task-card .task-desc {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .task-card .meta {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .task-card .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .task-card.completed .title {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge.done { background: var(--badge-done-bg); color: var(--badge-done-text); }
+        .badge.open { background: var(--badge-open-bg); color: var(--badge-open-text); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .pagination span { font-size: 13px; color: var(--muted); }
+
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--muted);
+        }
+
+        .empty p { margin: 0 0 8px; }
+
+        .loading {
+            text-align: center;
+            padding: 32px;
+            color: var(--muted);
+        }
+
+        .edit-form {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border);
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            box-shadow: 0 4px 12px grba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 360px;
+        }
+
+        #toast.show { opacity: 1; transform: translateY(0); }
+        #toast.success { background: var(--success); }
+        #toast.error { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Todo App</h1>
+                <p>Управление задачами, пользователями и статистикой</p>
+            </div>
+            <button id="theme-toggle" class="secondary" onclick="toggleTheme()">🌙 Тёмная тема</button>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="tasks">Задачи</button>
+            <button class="tab" data-tab="users">Пользователи</button>
+            <button class="tab" data-tab="statistics">Статистика</button>
+        </nav>
+
+        <section id="panel-tasks" class="panel active">
+            <div class="card">
+                <h2>Новая задача</h2>
+                <label>Заголовок</label>
+                <input id="task-title" placeholder="Домашнее задание">
+                <label>Описание</label>
+                <textarea id="task-desc" placeholder="Описание задачи (необязательно)"></textarea>
+                <label>Автор</label>
+                <select id="task-author"></select>
+                <button onclick="createTask()">Создать задачу</button>
+            </div>
+
+            <div class="card">
+                <h2>Список задач</h2>
+                <div class="filters">
+                    <div>
+                        <label>Фильтр по автору</label>
+                        <select id="task-filter-user" onchange="taskPage=0; loadTasks()">
+                            <option value="">Все пользователи</option>
+                        </select>
+                    </div>
+                    <div style="flex:0">
+                        <label>&nbsp;</label>
+                        <button class="secondary" onclick="taskPage=0; loadTasks()">Обновить</button>
+                    </div>
+                </div>
+                <div id="tasks-container"><div class="loading">Загрузка...</div></div>
+                <div class="pagination" id="tasks-pagination"></div>
+            </div>
+        </section>
+
+        <section id="panel-users" class="panel">
+            <div class="card">
+                <h2>Новый пользователь</h2>
+                <div class="form-row">
+                    <div>
+                        <label>ФИО</label>
+                        <input id="user-name" placeholder="Ivan Ivanov">
+                    </div>
+                    <div>
+                        <label>Телефон</label>
+                        <input id="user-phone" placeholder="+79998887766">
+                    </div>
+                </div>
+                <button onclick="createUser()">Создать пользователя</button>
+            </div>
+
+            <div class="card">
+                <h2>Список пользователей</h2>
+                <div id="users-container"><div class="loading">Загрузка...</div></div>
+                <div class="pagination" id="users-pagination"></div>
+            </div>
+        </section>
+
+        <section id="panel-statistics" class="panel">
+            <div class="card">
+                <h2>Фильтры</h2>
+                <div class="filters">
+                    <div>
+                        <label>Пользователь</label>
+                        <select id="stat-user">
+                            <option value="">Все</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>С (YYYY-MM-DD)</label>
+                        <input id="stat-from" type="date">
+                    </div>
+                    <div>
+                        <label>По (YYYY-MM-DD)</label>
+                        <input id="stat-to" type="date">
+                    </div>
+                    <div style="flex:0">
+                        <label>&nbsp;</label>
+                        <button onclick="loadStatistics()">Получить</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Результаты</h2>
+                <div id="stats-container">
+                    <div class="empty"><p>Нажмите «Получить» для загрузки статистики</p></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        const API = 'http://127.0.0.1:5050/api/v1'
+        const PAGE_SIZE = 10
+        const TASK_FETCH_LIMIT = 500
+        let taskPage = 0
+        let userPage = 0
+        let usersCache = []
+
+        function initTheme() {
+            const saved = localStorage.getItem('theme')
+            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            document.documentElement.setAttribute('data-theme', theme)
+            updateThemeButton()
+        }
+
+        function updateThemeButton() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+            document.getElementById('theme-toggle').textContent = dark ? '☀️ Светлая тема' : '🌙 Тёмная тема'
+        }
+
+        function toggleTheme() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+            const next = dark ? 'light' : 'dark'
+            document.documentElement.setAttribute('data-theme', next)
+            localStorage.setItem('theme', next)
+            updateThemeButton()
+        }
+
+        initTheme()
+
+        async function api(method, path, body) {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } }
+            if (body !== undefined) opts.body = JSON.stringify(body)
+            const res = await fetch(API + path, opts)
+            if (res.status === 204) return null
+            const data = await res.json().catch(() => null)
+            if (!res.ok) {
+                const msg = data?.message || data?.error || `Ошибка ${res.status}`
+                throw new Error(msg)
+            }
+            return data
+        }
+
+        function toast(msg, type = 'success') {
+            const el = document.getElementById('toast')
+            el.textContent = msg
+            el.className = type + ' show'
+            clearTimeout(el._t)
+            el._t = setTimeout(() => { el.className = '' }, 3000)
+        }
+
+        function fmtDate(iso) {
+            if (!iso) return '—'
+            return new Date(iso).toLocaleString('ru-RU', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            })
+        }
+
+        function esc(str) {
+            if (str == null) return ''
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+        }
+
+        function userName(id) {
+            const u = usersCache.find(u => u.id === id)
+            return u ? u.full_name : `#${id}`
+        }
+
+        function renderPagination(containerId, page, hasMore, onPrev, onNext) {
+            document.getElementById(containerId).innerHTML =
+                `<button class="secondary small" onclick="${onPrev}" ${page === 0 ? 'disabled' : ''}>← Назад</button>` +
+                `<span>Страница ${page + 1}</span>` +
+                `<button class="secondary small" onclick="${onNext}" ${!hasMore ? 'disabled' : ''}>Вперёд →</button>`
+        }
+
+        document.querySelectorAll('.tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+                btn.classList.add('active')
+                document.getElementById('panel-' + btn.dataset.tab).classList.add('active')
+            })
+        })
+
+        function fillUserSelects() {
+            const opts = usersCache.map(u =>
+                `<option value="${u.id}">${esc(u.full_name)}</option>`
+            ).join('')
+            document.getElementById('task-author').innerHTML =
+                opts || '<option value="">— нет пользователей —</option>'
+            document.getElementById('task-filter-user').innerHTML =
+                '<option value="">Все пользователи</option>' + opts
+            document.getElementById('stat-user').innerHTML =
+                '<option value="">Все</option>' + opts
+        }
+
+        async function loadUsers() {
+            const container = document.getElementById('users-container')
+            container.innerHTML = '<div class="loading">Загрузка...</div>'
+            try {
+                const users = await api('GET', `/users?limit=${PAGE_SIZE}&offset=${userPage * PAGE_SIZE}`)
+                usersCache = users
+                fillUserSelects()
+                if (!users.length) {
+                    container.innerHTML =
+                        '<div class="empty"><p>Пользователей пока нет</p><p>Создайте первого пользователя выше</p></div>'
+                } else {
+                    container.innerHTML = '<ul>' + users.map(u => `
+                        <li id="user-${u.id}">
+                            <div class="info">
+                                <div class="title">${esc(u.full_name)}</div>
+                                <div class="meta">ID: ${u.id} · Телефон: ${esc(u.phone_number || '—')} · v${u.version}</div>
+                                <div class="edit-form" id="user-edit-${u.id}" style="display:none">
+                                    <label>ФИО</label>
+                                    <input id="user-edit-name-${u.id}" value="${esc(u.full_name)}">
+                                    <label>Телефон (пусто = очистить)</label>
+                                    <input id="user-edit-phone-${u.id}" value="${esc(u.phone_number || '')}">
+                                    <button class="small" onclick="saveUser(${u.id})">Сохранить</button>
+                                    <button class="secondary small" onclick="toggleUserEdit(${u.id})">Отмена</button>
+                                </div>
+                            </div>
+                            <div class="actions">
+                                <button class="secondary small" onclick="viewUser(${u.id})">Детали</button>
+                                <button class="secondary small" onclick="toggleUserEdit(${u.id})">Изменить</button>
+                                <button class="danger small" onclick="deleteUser(${u.id})">Удалить</button>
+                            </div>
+                        </li>`).join('') + '</ul>'
+                }
+                renderPagination('users-pagination', userPage, users.length === PAGE_SIZE, 'prevUsers()', 'nextUsers()')
+            } catch (e) {
+                container.innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`
+                toast(e.message, 'error')
+            }
+        }
+
+        function prevUsers() { if (userPage > 0) { userPage--; loadUsers() } }
+        function nextUsers() { userPage++; loadUsers() }
+
+        async function viewUser(id) {
+            try {
+                const u = await api('GET', `/users/${id}`)
+                toast(`#${u.id} ${u.full_name}, тел: ${u.phone_number || '—'}, v${u.version}`)
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        function toggleUserEdit(id) {
+            const el = document.getElementById('user-edit-' + id)
+            el.style.display = el.style.display === 'none' ? 'block' : 'none'
+        }
+
+        async function createUser() {
+            const full_name = document.getElementById('user-name').value.trim()
+            const phone = document.getElementById('user-phone').value.trim()
+            if (!full_name) return toast('Введите ФИО', 'error')
+            try {
+                const body = { full_name }
+                if (phone) body.phone_number = phone
+                await api('POST', '/users', body)
+                document.getElementById('user-name').value = ''
+                document.getElementById('user-phone').value = ''
+                toast('Пользователь создан')
+                loadUsers()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function saveUser(id) {
+            const full_name = document.getElementById('user-edit-name-' + id).value.trim()
+            const phone = document.getElementById('user-edit-phone-' + id).value.trim()
+            try {
+                await api('PATCH', `/users/${id}`, { full_name, phone_number: phone || null })
+                toast('Пользователь обновлён')
+                loadUsers()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Удалить пользователя #' + id + '?')) return
+            try {
+                await api('DELETE', `/users/${id}`)
+                toast('Пользователь удалён')
+                loadUsers()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function loadTasks() {
+            const container = document.getElementById('tasks-container')
+            container.innerHTML = '<div class="loading">Загрузка...</div>'
+            const userId = document.getElementById('task-filter-user').value
+            let qs = `?limit=${TASK_FETCH_LIMIT}&offset=0`
+            if (userId) qs += `&user_id=${userId}`
+            try {
+                const allTasks = await api('GET', '/tasks' + qs)
+                allTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                const tasks = allTasks.slice(taskPage * PAGE_SIZE, (taskPage + 1) * PAGE_SIZE)
+                const hasMore = allTasks.length > (taskPage + 1) * PAGE_SIZE
+                if (!tasks.length) {
+                    container.innerHTML =
+                        '<div class="empty"><p>Задач пока нет</p><p>Создайте первую задачу или измените фильтр</p></div>'
+                } else {
+                    container.innerHTML = '<div class="task-grid">' + tasks.map(t => `
+                        <article class="task-card ${t.completed ? 'completed' : ''}" id="task-${t.id}">
+                            <div class="task-card-header">
+                                <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id}, this.checked)">
+                                <div class="title">${esc(t.title)}</div>
+                                <span class="badge ${t.completed ? 'done' : 'open'}">${t.completed ? 'Готово' : 'Открыта'}</span>
+                            </div>
+                            ${t.description ? `<div class="task-desc">${esc(t.description)}</div>` : ''}
+                            <div class="meta">Автор: ${userName(t.author_user_id)} · Создана: ${fmtDate(t.created_at)}${t.completed_at ? ' · Завершена: ' + fmtDate(t.completed_at) : ''} · v${t.version}</div>
+                            <div class="actions">
+                                <button class="secondary small" onclick="viewTask(${t.id})">Детали</button>
+                                <button class="secondary small" onclick="toggleTaskEdit(${t.id})">Изменить</button>
+                                <button class="danger small" onclick="deleteTask(${t.id})">Удалить</button>
+                            </div>
+                            <div class="edit-form" id="task-edit-${t.id}" style="display:none">
+                                <label>Заголовок</label>
+                                <input id="task-edit-title-${t.id}" value="${esc(t.title)}">
+                                <label>Описание (пусто = очистить)</label>
+                                <textarea id="task-edit-desc-${t.id}">${esc(t.description || '')}</textarea>
+                                <button class="small" onclick="saveTask(${t.id})">Сохранить</button>
+                                <button class="secondary small" onclick="toggleTaskEdit(${t.id})">Отмена</button>
+                            </div>
+                        </article>`).join('') + '</div>'
+                }
+                renderPagination('tasks-pagination', taskPage, hasMore, 'prevTasks()', 'nextTasks()')
+            } catch (e) {
+                container.innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`
+                toast(e.message, 'error')
+            }
+        }
+
+        function prevTasks() { if (taskPage > 0) { taskPage--; loadTasks() } }
+        function nextTasks() { taskPage++; loadTasks() }
+
+        async function viewTask(id) {
+            try {
+                const t = await api('GET', `/tasks/${id}`)
+                toast(`#${t.id} «${t.title}» — ${t.completed ? 'выполнена' : 'открыта'}`)
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        function toggleTaskEdit(id) {
+            const el = document.getElementById('task-edit-' + id)
+            el.style.display = el.style.display === 'none' ? 'block' : 'none'
+        }
+
+        async function createTask() {
+            const title = document.getElementById('task-title').value.trim()
+            const description = document.getElementById('task-desc').value.trim()
+            const author_user_id = parseInt(document.getElementById('task-author').value)
+            if (!title) return toast('Введите заголовок', 'error')
+            if (!author_user_id) return toast('Выберите автора', 'error')
+            try {
+                const body = { title, author_user_id }
+                if (description) body.description = description
+                await api('POST', '/tasks', body)
+                document.getElementById('task-title').value = ''
+                document.getElementById('task-desc').value = ''
+                taskPage = 0
+                toast('Задача создана')
+                loadTasks()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function toggleTask(id, completed) {
+            try {
+                await api('PATCH', `/tasks/${id}`, { completed })
+                toast(completed ? 'Задача выполнена' : 'Задача снова открыта')
+                loadTasks()
+            } catch (e) { toast(e.message, 'error'); loadTasks() }
+        }
+
+        async function saveTask(id) {
+            const title = document.getElementById('task-edit-title-' + id).value.trim()
+            const desc = document.getElementById('task-edit-desc-' + id).value.trim()
+            try {
+                await api('PATCH', `/tasks/${id}`, { title, description: desc || null })
+                toast('Задача обновлена')
+                loadTasks()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Удалить задачу #' + id + '?')) return
+            try {
+                await api('DELETE', `/tasks/${id}`)
+                toast('Задача удалена')
+                loadTasks()
+            } catch (e) { toast(e.message, 'error') }
+        }
+
+        async function loadStatistics() {
+            const container = document.getElementById('stats-container')
+            container.innerHTML = '<div class="loading">Загрузка...</div>'
+            const params = []
+            const userId = document.getElementById('stat-user').value
+            const from = document.getElementById('stat-from').value
+            const to = document.getElementById('stat-to').value
+            if (userId) params.push(`user_id=${userId}`)
+            if (from) params.push(`from=${from}`)
+            if (to) params.push(`to=${to}`)
+            try {
+                const path = '/statistics' + (params.length ? '?' + params.join('&') : '')
+                const s = await api('GET', path)
+                const rate = s.tasks_completed_rate != null ? s.tasks_completed_rate : 0
+                container.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="value">${s.tasks_created}</div><div class="label">Создано задач</div></div>
+                        <div class="stat-card"><div class="value">${s.tasks_completed}</div><div class="label">Выполнено</div></div>
+                        <div class="stat-card"><div class="value">${rate}%</div><div class="label">Процент выполнения</div></div>
+                        <div class="stat-card"><div class="value" style="font-size:20px">${esc(s.tasks_average_completion_time || '—')}</div><div class="label">Среднее время выполнения</div></div>
+                    </div>
+                    <div class="progress-bar"><div class="fill" style="width:${Math.min(rate, 100)}%"></div></div>`
+                toast('Статистика загружена')
+            } catch (e) {
+                container.innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`
+                toast(e.message, 'error')
+            }
+        }
+
+        loadUsers().then(() => loadTasks())
+    </script>
+</body>
+</html>
