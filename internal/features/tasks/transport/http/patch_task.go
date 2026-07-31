@@ -12,9 +12,9 @@ import (
 )
 
 type PatchTaskRequest struct {
-	Title       core_http_types.Nullable[string] `json:"title"`
-	Description core_http_types.Nullable[string] `json:"description"`
-	Completed   core_http_types.Nullable[bool]   `json:"completed"`
+	Title       core_http_types.Nullable[string] `json:"title"           swaggertype:"string"    example:"Утром в институт"`
+	Description core_http_types.Nullable[string] `json:"description"     swaggertype:"string"     example:"null"`
+	Completed   core_http_types.Nullable[bool]   `json:"completed"       swaggertype:"boolean"`
 }
 
 func (r *PatchTaskRequest) Validate() error {
@@ -50,6 +50,25 @@ func (r *PatchTaskRequest) Validate() error {
 
 type PatchUserResponse TaskDTOResponse
 
+// PatchTask    godoc
+// @Summary     Обновить задачу
+// @Description Обновляет информацию об уже существующей в системе задачи
+// @Description ### Логика обновления полей (Three-state logic):
+// @Description 1. **Поле не передано**: `description` игнорируется, значение в БД не меняется
+// @Description 2. **Явно передано значение**: `"description": "Утром в институт к 9:00"` - устанавливает новое описание задачи в БД
+// @Description 3. **Передан null**: `"description": null` - очищает поле в БД (set to NULL)
+// @Description Ограничения: `title` и `completed` не могут быть высталвены как null
+// @Tags        tasks
+// @Accept      json
+// @Produce     json
+// @Param       id            path int            true           "ID изменяемой задачи"
+// @Param       request body PatchTaskRequest     true           "PatchTask тело запроса"
+// @Success     200 {object} PatchUserResponse                   "Успешно измененная задача"
+// @Failure     400 {object} core_http_response.ErrorResponse    "Bad request"
+// @Failure     404 {object} core_http_response.ErrorResponse    "Task not found"
+// @Failure     409 {object} core_http_response.ErrorResponse    "Conflict"
+// @Failure     500 {object} core_http_response.ErrorResponse    "Internal server error"
+// @Router      /tasks/{id} [patch]
 func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

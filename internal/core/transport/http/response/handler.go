@@ -94,11 +94,9 @@ func (h *HTTPResponseHandler) errorResponse(
 	err error,
 	msg string,
 ) {
-	h.rw.WriteHeader(statusCode) // отдаем корректный статус код
-	// отдаем json с подробной информацией что пошло не так
-	response := map[string]string{
-		"message": msg,
-		"error":   err.Error(),
+	response := ErrorResponse{
+		Error: err.Error(),
+		Message: msg,
 	}
 
 	h.JSONResponse(
