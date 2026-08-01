@@ -93,10 +93,11 @@ func main() {
 	webTransportHTTP := web_transport_http.NewWebHTTPHandler(webService)
 
 	logger.Debug("initializing HTTP server")
+	httpConfig := core_http_server.NewConfigMust()
 	httpServer := core_http_server.NewHTTPServer(
-		core_http_server.NewConfigMust(),
+		httpConfig,
 		logger,
-		core_http_middleware.CORS(),
+		core_http_middleware.CORS(httpConfig.AllowedOrigins),
 		// передаем список необходимых middleware, который хотим навесить на все http-обработчики
 		core_http_middleware.RequestID(),
 		core_http_middleware.Logger(logger),
