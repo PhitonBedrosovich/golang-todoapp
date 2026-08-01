@@ -57,3 +57,24 @@ services:
         ENTRYPOINT ["swag"]
     volumes:
       - ${PROJECT_ROOT}:/code
+
+  caddy:
+    image: caddy:2.10
+    container_name: todoapp-caddy
+    restart: always
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ${PROJECT_ROOT}/cmd/todoapp/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+    depends_on:
+      - todoapp
+
+volumes:
+  caddy_data:
+  caddy_config:
