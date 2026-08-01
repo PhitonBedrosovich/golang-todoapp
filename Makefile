@@ -148,7 +148,7 @@ todoapp-run:
 
 # пересборка docker-compose сервиса
 todoapp-deploy:
-	@docker compose up -d --build todoapp
+	@docker compose up -d --build todoapp caddy
 
 todoapp-undeploy:
 	@docker compose down todoapp
