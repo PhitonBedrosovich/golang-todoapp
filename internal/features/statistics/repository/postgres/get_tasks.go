@@ -40,7 +40,7 @@ func (r *StatisticsRepository) GetTasks(
 	}
 
 	if to != nil {
-		conditions = append(conditions, fmt.Sprintf("created<$%d", len(args)+1))
+		conditions = append(conditions, fmt.Sprintf("created_at<$%d", len(args)+1))
 		args = append(args, to)
 	}
 
