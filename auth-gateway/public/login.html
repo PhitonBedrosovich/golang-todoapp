@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Todo App</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --primary: #256eb2;
+            --primary-hover: #1d4ed8;
+            --bg: #f5f5f5;
+            --card: #fff;
+            --text: #222;
+            --muted: #666;
+            --border: #f0f0f0;
+            --danger: #dc2626;
+        }
+
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e4e4e4;
+            --muted: #999;
+            --border: #333;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .brand h1 {
+            margin: 0 0 6px;
+            font-size: 28px;
+        }
+
+        .brand p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            padding: 28px;
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            margin: 0 0 20px;
+            font-size: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-family: inherit;
+            background: var(--card);
+            color: var(--text);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 110, 178, 0.15);
+        }
+
+        input.invalid {
+            border-color: var(--danger);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+        }
+
+        button[type="submit"]:hover { background: var(--primary-hover); }
+        button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error.show { display: block; }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .footer button {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .footer button:hover { color: var(--text); }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+        <div class="brand">
+            <h1>Todo App</h1>
+            <p>Войдите, чтобы продолжить</p>
+        </div>
+        <div class="card">
+            <h2>Авторизация</h2>
+            <div class="error" id="error"></div>
+            <form id="login-form">
+                <label for="username">Логин</label>
+                <input id="username" name="username" autocomplete="username" required autofocus>
+                <label for="password">Пароль</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+                <button type="submit" id="submit-btn">Войти</button>
+            </form>
+        </div>
+        <div class="footer">
+            <button type="button" id="theme-toggle">🌙 Тёмная тема</button>
+        </div>
+    </div>
+
+    <script>
+        function initTheme() {
+            const saved = localStorage.getItem('theme')
+            const theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            document.documentElement.setAttribute('data-theme', theme)
+            updateThemeButton()
+        }
+
+        function updateThemeButton() {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+            document.getElementById('theme-toggle').textContent = dark ? '☀️ Светлая тема' : '🌙 Тёмная тема'
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+            const next = dark ? 'light' : 'dark'
+            document.documentElement.setAttribute('data-theme', next)
+            localStorage.setItem('theme', next)
+            updateThemeButton()
+        })
+
+        initTheme()
+
+        const form = document.getElementById('login-form')
+        const errorEl = document.getElementById('error')
+        const submitBtn = document.getElementById('submit-btn')
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            errorEl.classList.remove('show')
+            document.getElementById('username').classList.remove('invalid')
+            document.getElementById('password').classList.remove('invalid')
+
+            const username = document.getElementById('username').value.trim()
+            const password = document.getElementById('password').value
+
+            if (!username || !password) {
+                showError('Введите логин и пароль')
+                return
+            }
+
+            submitBtn.disabled = true
+            submitBtn.textContent = 'Вход...'
+
+            try {
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ username, password })
+                })
+                const data = await res.json().catch(() => ({}))
+                if (!res.ok) {
+                    document.getElementById('username').classList.add('invalid')
+                    document.getElementById('password').classList.add('invalid')
+                    showError(data.message || 'Ошибка входа')
+                    return
+                }
+                window.location.href = '/'
+            } catch (_) {
+                showError('Сервер недоступен')
+            } finally {
+                submitBtn.disabled = false
+                submitBtn.textContent = 'Войти'
+            }
+        })
+
+        function showError(msg) {
+            errorEl.textContent = msg
+            errorEl.classList.add('show')
+        }
+    </script>
+</body>
+</html>

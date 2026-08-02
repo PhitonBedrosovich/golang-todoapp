@@ -19,8 +19,25 @@ services:
       - LOGGER_FOLDER=/app/out/logs
     volumes:
       - ${PROJECT_ROOT}/out/logs:/app/out/logs
-    ports:
-      - "5050:5050"
+    expose:
+      - "5050"
+    restart: always
+
+  auth-gateway:
+    build:
+      context: ${PROJECT_ROOT}/auth-gateway
+      dockerfile: ${PROJECT_ROOT}/auth-gateway/Dockerfile
+    container_name: todoapp-auth-gateway
+    environment:
+      - HTTP_ADDR=:8080
+      - UPSTREAM=http://todoapp:5050
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRY=${JWT_EXPIRY}
+      - COOKIE_SECURE=${COOKIE_SECURE}
+    depends_on:
+      - todoapp
     restart: always
 
   todoapp-postgres:
@@ -68,12 +85,12 @@ services:
       - "443:443"
 
     volumes:
-      - ${PROJECT_ROOT}/cmd/todoapp/Caddyfile:/etc/caddy/Caddyfile
+      - ${PROJECT_ROOT}/auth-gateway/Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
 
     depends_on:
-      - todoapp
+      - auth-gateway
 
 volumes:
   caddy_data:
